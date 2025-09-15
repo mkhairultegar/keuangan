@@ -3,48 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MoneyTracker - Pengatur Keuangan</title>
+    <title>MoneyTracker - Pengatur Keuangan Cloud</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
-
-        function addDebt(e) {
-            e.preventDefault();
-            
-            const person = document.getElementById('debtPerson').value;
-            const amount = parseFloat(document.getElementById('debtAmount').value);
-            const type = document.getElementById('debtType').value;
-            const note = document.getElementById('debtNote').value;
-
-            const debt = {
-                id: Date.now(),
-                person,
-                amount,
-                type,
-                note,
-                date: new Date().toLocaleDateString('id-ID')
-            };
-
-            debts.unshift(debt);
-            localStorage.setItem('debts', JSON.stringify(debts));
-            
-            updateSummary();
-            renderDebts();
-            
-            // Reset form
-            document.getElementById('debtForm').reset();
-        }
-
-        function deleteDebt(index) {
-            if (confirm('Yakin ingin menghapus catatan utang ini?')) {
-                debts.splice(index, 1);
-                localStorage.setItem('debts', JSON.stringify(debts));
-                updateSummary();
-                renderDebts();
-            }
         }
 
         body {
@@ -77,6 +41,24 @@
             font-size: 1.1rem;
         }
 
+        .sync-status {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .sync-status.online {
+            background: rgba(76, 175, 80, 0.8);
+        }
+
+        .sync-status.offline {
+            background: rgba(244, 67, 54, 0.8);
+        }
+
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -106,6 +88,11 @@
 
         .income-card {
             background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .expense-card {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
             color: white;
         }
 
@@ -201,11 +188,17 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .transactions-card {
             grid-column: 1 / -1;
         }
 
-        .transaction-item {
+        .transaction-item, .debt-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -217,7 +210,7 @@
             transition: background 0.3s ease;
         }
 
-        .transaction-item:hover {
+        .transaction-item:hover, .debt-item:hover {
             background: rgba(255, 255, 255, 0.9);
         }
 
@@ -229,68 +222,25 @@
             border-left-color: #f44336;
         }
 
-        .transaction-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .transaction-desc {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .transaction-category {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .transaction-amount {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .transaction-amount.income {
-            color: #4CAF50;
-        }
-
-        .transaction-amount.expense {
-            color: #f44336;
-        }
-
-        .debt-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 12px;
-            transition: background 0.3s ease;
-        }
-
-        .debt-item:hover {
-            background: rgba(255, 255, 255, 0.9);
-        }
-
         .debt-item.owe {
-            border-left: 4px solid #f44336;
+            border-left-color: #f44336;
         }
 
         .debt-item.lent {
-            border-left: 4px solid #4CAF50;
+            border-left-color: #4CAF50;
         }
 
-        .debt-info {
+        .transaction-info, .debt-info {
             display: flex;
             flex-direction: column;
         }
 
-        .debt-person {
+        .transaction-desc, .debt-person {
             font-weight: 600;
             margin-bottom: 5px;
         }
 
-        .debt-note {
+        .transaction-category, .debt-note {
             font-size: 0.9rem;
             color: #666;
         }
@@ -313,17 +263,17 @@
             color: #2e7d32;
         }
 
-        .debt-amount {
+        .transaction-amount, .debt-amount {
             font-weight: bold;
             font-size: 1.1rem;
         }
 
-        .debt-amount.owe {
-            color: #f44336;
+        .transaction-amount.income, .debt-amount.lent {
+            color: #4CAF50;
         }
 
-        .debt-amount.lent {
-            color: #4CAF50;
+        .transaction-amount.expense, .debt-amount.owe {
+            color: #f44336;
         }
 
         .delete-btn {
@@ -341,11 +291,55 @@
             background: #ff3838;
         }
 
+        .filter-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-filter {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-filter:first-of-type {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-filter:last-of-type {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        .transaction-date, .debt-date {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
         .empty-state {
             text-align: center;
             color: #666;
             font-style: italic;
             padding: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            padding: 20px;
         }
 
         @media (max-width: 768px) {
@@ -365,10 +359,21 @@
                 flex-direction: column;
             }
             
-            .debt-item {
+            .transaction-item, .debt-item {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
+            }
+
+            .filter-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-container input,
+            .filter-container button {
+                width: 100%;
+                margin-bottom: 5px;
             }
         }
 
@@ -380,131 +385,255 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .firebase-config {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px dashed rgba(255,255,255,0.3);
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>💰 MoneyTracker</h1>
-            <p>Kelola keuangan Anda dengan mudah dan stylish</p>
+            <h1>🔥 MoneyTracker Cloud</h1>
+            <p>Kelola keuangan Anda dengan sinkronisasi cloud Firebase</p>
+            <div id="syncStatus" class="sync-status online">✅ Terhubung ke Firebase</div>
         </div>
 
         <div class="dashboard">
-            <div class="card balance-card">
-                <div class="card-title">Saldo</div>
-                <div class="card-amount" id="balance">Rp 0</div>
-            </div>
-            <div class="card income-card">
-                <div class="card-title">Pemasukan</div>
-                <div class="card-amount" id="income">Rp 0</div>
-            </div>
-            <div class="card expense-card">
-                <div class="card-title">Pengeluaran</div>
-                <div class="card-amount" id="expense">Rp 0</div>
-            </div>
-            <div class="card debt-card">
-                <div class="card-title">Total Utang</div>
-                <div class="card-amount" id="totalDebt">Rp 0</div>
-            </div>
+                <div class="card balance-card">
+                    <div class="card-title">Saldo</div>
+                    <div class="card-amount" id="balance">Rp 0</div>
+                </div>
+                <div class="card income-card">
+                    <div class="card-title">Pemasukan</div>
+                    <div class="card-amount" id="income">Rp 0</div>
+                </div>
+                <div class="card expense-card">
+                    <div class="card-title">Pengeluaran</div>
+                    <div class="card-amount" id="expense">Rp 0</div>
+                </div>
+                <div class="card debt-card">
+                    <div class="card-title">Total Utang</div>
+                    <div class="card-amount" id="totalDebt">Rp 0</div>
+                </div>
 
-            <div class="card form-card">
-                <h3 style="margin-bottom: 20px; color: #333; text-align: center;">Tambah Transaksi</h3>
-                <form id="transactionForm">
-                    <div class="form-container">
-                        <div class="input-group">
-                            <label for="description">Deskripsi</label>
-                            <input type="text" id="description" required placeholder="Contoh: Makan siang">
+                <div class="card form-card">
+                    <h3 style="margin-bottom: 20px; color: #333; text-align: center;">Tambah Transaksi</h3>
+                    <form id="transactionForm">
+                        <div class="form-container">
+                            <div class="input-group">
+                                <label for="description">Deskripsi</label>
+                                <input type="text" id="description" required placeholder="Contoh: Makan siang">
+                            </div>
+                            <div class="input-group">
+                                <label for="amount">Jumlah</label>
+                                <input type="number" id="amount" required placeholder="50000">
+                            </div>
+                            <div class="input-group">
+                                <label for="category">Kategori</label>
+                                <select id="category" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="makanan">Makanan</option>
+                                    <option value="transportasi">Transportasi</option>
+                                    <option value="hiburan">Hiburan</option>
+                                    <option value="belanja">Belanja</option>
+                                    <option value="gaji">Gaji</option>
+                                    <option value="bonus">Bonus</option>
+                                    <option value="lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="type">Tipe</label>
+                                <select id="type" required>
+                                    <option value="">Pilih Tipe</option>
+                                    <option value="income">Pemasukan</option>
+                                    <option value="expense">Pengeluaran</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="transactionDate">Tanggal</label>
+                                <input type="date" id="transactionDate" required>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <label for="amount">Jumlah</label>
-                            <input type="number" id="amount" required placeholder="50000">
+                        <div class="btn-container">
+                            <button type="submit" class="btn btn-primary">Tambah Transaksi</button>
+                            <button type="button" class="btn btn-secondary" onclick="clearAll()">Hapus Semua</button>
                         </div>
-                        <div class="input-group">
-                            <label for="category">Kategori</label>
-                            <select id="category" required>
-                                <option value="">Pilih Kategori</option>
-                                <option value="makanan">Makanan</option>
-                                <option value="transportasi">Transportasi</option>
-                                <option value="hiburan">Hiburan</option>
-                                <option value="belanja">Belanja</option>
-                                <option value="gaji">Gaji</option>
-                                <option value="bonus">Bonus</option>
-                                <option value="lainnya">Lainnya</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="type">Tipe</label>
-                            <select id="type" required>
-                                <option value="">Pilih Tipe</option>
-                                <option value="income">Pemasukan</option>
-                                <option value="expense">Pengeluaran</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="btn-container">
-                        <button type="submit" class="btn btn-primary">Tambah Transaksi</button>
-                        <button type="button" class="btn btn-secondary" onclick="clearAll()">Hapus Semua</button>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
 
-            <div class="card form-card">
-                <h3 style="margin-bottom: 20px; color: #333; text-align: center;">📝 Catatan Utang</h3>
-                <form id="debtForm">
-                    <div class="form-container">
-                        <div class="input-group">
-                            <label for="debtPerson">Nama Orang</label>
-                            <input type="text" id="debtPerson" required placeholder="Contoh: Budi">
+                <div class="card form-card">
+                    <h3 style="margin-bottom: 20px; color: #333; text-align: center;">📝 Catatan Utang</h3>
+                    <form id="debtForm">
+                        <div class="form-container">
+                            <div class="input-group">
+                                <label for="debtPerson">Nama Orang</label>
+                                <input type="text" id="debtPerson" required placeholder="Contoh: Budi">
+                            </div>
+                            <div class="input-group">
+                                <label for="debtAmount">Jumlah Utang</label>
+                                <input type="number" id="debtAmount" required placeholder="100000">
+                            </div>
+                            <div class="input-group">
+                                <label for="debtType">Status</label>
+                                <select id="debtType" required>
+                                    <option value="">Pilih Status</option>
+                                    <option value="owe">Saya Berutang Ke</option>
+                                    <option value="lent">Saya Memberikan Utang Ke</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="debtNote">Catatan (Opsional)</label>
+                                <input type="text" id="debtNote" placeholder="Untuk beli makan, dll">
+                            </div>
+                            <div class="input-group">
+                                <label for="debtDate">Tanggal</label>
+                                <input type="date" id="debtDate" required>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <label for="debtAmount">Jumlah Utang</label>
-                            <input type="number" id="debtAmount" required placeholder="100000">
+                        <div class="btn-container">
+                            <button type="submit" class="btn btn-primary">Tambah Catatan Utang</button>
                         </div>
-                        <div class="input-group">
-                            <label for="debtType">Status</label>
-                            <select id="debtType" required>
-                                <option value="">Pilih Status</option>
-                                <option value="owe">Saya Berutang Ke</option>
-                                <option value="lent">Saya Memberikan Utang Ke</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label for="debtNote">Catatan (Opsional)</label>
-                            <input type="text" id="debtNote" placeholder="Untuk beli makan, dll">
-                        </div>
-                    </div>
-                    <div class="btn-container">
-                        <button type="submit" class="btn btn-primary">Tambah Catatan Utang</button>
-                    </div>
-                </form>
-            </div>
+                    </form>
+                </div>
 
-            <div class="card transactions-card">
-                <h3 style="margin-bottom: 20px; color: #333; text-align: center;">Riwayat Transaksi</h3>
-                <div id="transactionsList">
-                    <div class="empty-state">
-                        Belum ada transaksi. Tambahkan transaksi pertama Anda!
+                <div class="card transactions-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="color: #333; margin: 0;">Riwayat Transaksi</h3>
+                        <div class="filter-container">
+                            <input type="date" id="filterDate" placeholder="Filter tanggal" style="padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 0.9rem;">
+                            <button class="btn-filter" onclick="filterTransactions()">Filter</button>
+                            <button class="btn-filter" onclick="clearFilter('transaction')">Reset</button>
+                        </div>
+                    </div>
+                    <div id="transactionsList">
+                        <div class="loading">⏳ Memuat data transaksi...</div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card transactions-card">
-                <h3 style="margin-bottom: 20px; color: #333; text-align: center;">📊 Catatan Utang</h3>
-                <div id="debtsList">
-                    <div class="empty-state">
-                        Belum ada catatan utang. Tambahkan catatan pertama Anda!
+                <div class="card transactions-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="color: #333; margin: 0;">📊 Catatan Utang</h3>
+                        <div class="filter-container">
+                            <input type="date" id="filterDebtDate" placeholder="Filter tanggal" style="padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 0.9rem;">
+                            <button class="btn-filter" onclick="filterDebts()">Filter</button>
+                            <button class="btn-filter" onclick="clearFilter('debt')">Reset</button>
+                        </div>
+                    </div>
+                    <div id="debtsList">
+                        <div class="loading">⏳ Memuat data utang...</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <script>
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-        let debts = JSON.parse(localStorage.getItem('debts')) || [];
+        // Global variables
+        let db = null;
+        let transactions = [];
+        let debts = [];
+        let filteredTransactions = [];
+        let filteredDebts = [];
+
+        // Initialize Firebase with your configuration
+        function initializeFirebase() {
+            const firebaseConfig = {
+                apiKey: "AIzaSyBlO7XTiLA16gqtXXEnYYS-q0ytLxDEDYk",
+                authDomain: "money-tracker-mkhairultegar.firebaseapp.com",
+                databaseURL: "https://money-tracker-mkhairultegar-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "money-tracker-mkhairultegar",
+                storageBucket: "money-tracker-mkhairultegar.firebasestorage.app",
+                messagingSenderId: "41631315085",
+                appId: "1:41631315085:web:fed6c1846b93ff3cac9ec4"
+            };
+
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                
+                // Update status
+                updateSyncStatus('online', '✅ Terhubung ke Firebase');
+                
+                // Load data
+                loadData();
+                setDefaultDates();
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                updateSyncStatus('offline', '❌ Gagal menghubungkan Firebase');
+                
+                // Fallback to localStorage
+                loadLocalData();
+                setDefaultDates();
+            }
+        }
+
+        // Fallback to localStorage if Firebase fails
+        function loadLocalData() {
+            transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            debts = JSON.parse(localStorage.getItem('debts')) || [];
+            filteredTransactions = [...transactions];
+            filteredDebts = [...debts];
+            updateSummary();
+            renderTransactions();
+            renderDebts();
+        }
+
+        function updateSyncStatus(status, message) {
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.className = `sync-status ${status}`;
+            statusEl.textContent = message;
+        }
 
         function formatCurrency(amount) {
             return 'Rp ' + amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function loadData() {
+            // Load transactions
+            db.ref('transactions').on('value', (snapshot) => {
+                const data = snapshot.val();
+                transactions = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
+                filteredTransactions = [...transactions];
+                updateSummary();
+                renderTransactions();
+            });
+
+            // Load debts
+            db.ref('debts').on('value', (snapshot) => {
+                const data = snapshot.val();
+                debts = data ? Object.keys(data).map(key => ({id: key, ...data[key]})) : [];
+                filteredDebts = [...debts];
+                updateSummary();
+                renderDebts();
+            });
         }
 
         function updateSummary() {
@@ -531,22 +660,23 @@
         function renderTransactions() {
             const list = document.getElementById('transactionsList');
             
-            if (transactions.length === 0) {
-                list.innerHTML = '<div class="empty-state">Belum ada transaksi. Tambahkan transaksi pertama Anda!</div>';
+            if (filteredTransactions.length === 0) {
+                list.innerHTML = '<div class="empty-state">Tidak ada transaksi yang sesuai filter.</div>';
                 return;
             }
 
-            list.innerHTML = transactions.map((transaction, index) => `
+            list.innerHTML = filteredTransactions.map((transaction, index) => `
                 <div class="transaction-item ${transaction.type} fade-in">
                     <div class="transaction-info">
                         <div class="transaction-desc">${transaction.description}</div>
                         <div class="transaction-category">${transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}</div>
+                        <div class="transaction-date">📅 ${formatDate(transaction.date)}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div class="transaction-amount ${transaction.type}">
                             ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}
                         </div>
-                        <button class="delete-btn" onclick="deleteTransaction(${index})">Hapus</button>
+                        <button class="delete-btn" onclick="deleteTransaction('${transaction.id}')">Hapus</button>
                     </div>
                 </div>
             `).join('');
@@ -555,12 +685,12 @@
         function renderDebts() {
             const list = document.getElementById('debtsList');
             
-            if (debts.length === 0) {
-                list.innerHTML = '<div class="empty-state">Belum ada catatan utang. Tambahkan catatan pertama Anda!</div>';
+            if (filteredDebts.length === 0) {
+                list.innerHTML = '<div class="empty-state">Tidak ada catatan utang yang sesuai filter.</div>';
                 return;
             }
 
-            list.innerHTML = debts.map((debt, index) => `
+            list.innerHTML = filteredDebts.map((debt, index) => `
                 <div class="debt-item ${debt.type} fade-in">
                     <div class="debt-info">
                         <div class="debt-status ${debt.type}">
@@ -568,12 +698,13 @@
                         </div>
                         <div class="debt-person">${debt.person}</div>
                         ${debt.note ? `<div class="debt-note">${debt.note}</div>` : ''}
+                        <div class="debt-date">📅 ${formatDate(debt.date)}</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div class="debt-amount ${debt.type}">
                             ${debt.type === 'owe' ? '-' : '+'}${formatCurrency(debt.amount)}
                         </div>
-                        <button class="delete-btn" onclick="deleteDebt(${index})">Hapus</button>
+                        <button class="delete-btn" onclick="deleteDebt('${debt.id}')">Hapus</button>
                     </div>
                 </div>
             `).join('');
@@ -586,68 +717,147 @@
             const amount = parseFloat(document.getElementById('amount').value);
             const category = document.getElementById('category').value;
             const type = document.getElementById('type').value;
+            const date = document.getElementById('transactionDate').value;
 
             const transaction = {
-                id: Date.now(),
                 description,
                 amount,
                 category,
                 type,
-                date: new Date().toLocaleDateString('id-ID')
+                date,
+                timestamp: Date.now()
             };
 
-            transactions.unshift(transaction);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            
-            updateSummary();
-            renderTransactions();
-            
-            // Reset form
-            document.getElementById('transactionForm').reset();
-            
-            // Show success animation
-            document.querySelector('.form-card').style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                document.querySelector('.form-card').style.transform = 'scale(1)';
-            }, 200);
-        }
-
-        function deleteTransaction(index) {
-            if (confirm('Yakin ingin menghapus transaksi ini?')) {
-                transactions.splice(index, 1);
+            if (db) {
+                // Save to Firebase
+                db.ref('transactions').push(transaction).then(() => {
+                    document.getElementById('transactionForm').reset();
+                    setDefaultDates();
+                    updateSyncStatus('online', '✅ Transaksi tersimpan');
+                }).catch((error) => {
+                    console.error('Error saving transaction:', error);
+                    updateSyncStatus('offline', '❌ Gagal menyimpan');
+                });
+            } else {
+                // Fallback to localStorage
+                transaction.id = Date.now().toString();
+                transactions.unshift(transaction);
                 localStorage.setItem('transactions', JSON.stringify(transactions));
+                filteredTransactions = [...transactions];
                 updateSummary();
                 renderTransactions();
+                document.getElementById('transactionForm').reset();
+                setDefaultDates();
             }
         }
 
-        function clearAll() {
-            if (confirm('Yakin ingin menghapus semua data (transaksi & utang)?')) {
-                transactions = [];
-                debts = [];
-                localStorage.removeItem('transactions');
-                localStorage.removeItem('debts');
+        function addDebt(e) {
+            e.preventDefault();
+            
+            const person = document.getElementById('debtPerson').value;
+            const amount = parseFloat(document.getElementById('debtAmount').value);
+            const type = document.getElementById('debtType').value;
+            const note = document.getElementById('debtNote').value;
+            const date = document.getElementById('debtDate').value;
+
+            const debt = {
+                person,
+                amount,
+                type,
+                note,
+                date,
+                timestamp: Date.now()
+            };
+
+            if (db) {
+                // Save to Firebase
+                db.ref('debts').push(debt).then(() => {
+                    document.getElementById('debtForm').reset();
+                    setDefaultDates();
+                    updateSyncStatus('online', '✅ Utang tersimpan');
+                }).catch((error) => {
+                    console.error('Error saving debt:', error);
+                    updateSyncStatus('offline', '❌ Gagal menyimpan');
+                });
+            } else {
+                // Fallback to localStorage
+                debt.id = Date.now().toString();
+                debts.unshift(debt);
+                localStorage.setItem('debts', JSON.stringify(debts));
+                filteredDebts = [...debts];
                 updateSummary();
-                renderTransactions();
                 renderDebts();
+                document.getElementById('debtForm').reset();
+                setDefaultDates();
             }
         }
 
-        // Event listeners
-        document.getElementById('transactionForm').addEventListener('submit', addTransaction);
-        document.getElementById('debtForm').addEventListener('submit', addDebt);
+        function deleteTransaction(id) {
+            if (confirm('Yakin ingin menghapus transaksi ini?')) {
+                if (db) {
+                    db.ref('transactions').child(id).remove().then(() => {
+                        updateSyncStatus('online', '✅ Transaksi dihapus');
+                    }).catch((error) => {
+                        console.error('Error deleting transaction:', error);
+                        updateSyncStatus('offline', '❌ Gagal menghapus');
+                    });
+                } else {
+                    // Fallback to localStorage
+                    transactions = transactions.filter(t => t.id !== id);
+                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                    filteredTransactions = [...transactions];
+                    updateSummary();
+                    renderTransactions();
+                }
+            }
+        }
 
-        // Initialize
-        updateSummary();
-        renderTransactions();
-        renderDebts();
+        function deleteDebt(id) {
+            if (confirm('Yakin ingin menghapus catatan utang ini?')) {
+                if (db) {
+                    db.ref('debts').child(id).remove().then(() => {
+                        updateSyncStatus('online', '✅ Utang dihapus');
+                    }).catch((error) => {
+                        console.error('Error deleting debt:', error);
+                        updateSyncStatus('offline', '❌ Gagal menghapus');
+                    });
+                } else {
+                    // Fallback to localStorage
+                    debts = debts.filter(d => d.id !== id);
+                    localStorage.setItem('debts', JSON.stringify(debts));
+                    filteredDebts = [...debts];
+                    updateSummary();
+                    renderDebts();
+                }
+            }
+        }
 
-        // Add some sparkle effect on hover for cards
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('mouseover', function() {
-                this.style.background = this.style.background || getComputedStyle(this).background;
-            });
-        });
-    </script>
-</body>
-</html>
+        function filterTransactions() {
+            const filterDate = document.getElementById('filterDate').value;
+            if (filterDate) {
+                filteredTransactions = transactions.filter(t => t.date === filterDate);
+            } else {
+                filteredTransactions = [...transactions];
+            }
+            renderTransactions();
+        }
+
+        function filterDebts() {
+            const filterDate = document.getElementById('filterDebtDate').value;
+            if (filterDate) {
+                filteredDebts = debts.filter(d => d.date === filterDate);
+            } else {
+                filteredDebts = [...debts];
+            }
+            renderDebts();
+        }
+
+        function clearFilter(type) {
+            if (type === 'transaction') {
+                document.getElementById('filterDate').value = '';
+                filteredTransactions = [...transactions];
+                renderTransactions();
+            } else if (type === 'debt') {
+                document.getElementById('filterDebtDate').value = '';
+                filteredDebts = [...debts];
+                renderDebts();
