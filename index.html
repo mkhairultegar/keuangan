@@ -3,62 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Tracker</title>
+    <title>MyFinance - Kelola Keuangan & Utang</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Money Tracker</h1>
+    <!-- Background -->
+    <div class="background">
+        <div class="shape shape1"></div>
+        <div class="shape shape2"></div>
+        <div class="shape shape3"></div>
+    </div>
 
-    <!-- Dashboard -->
-    <section id="dashboard">
-        <div class="card saldo">
-            <h3>Total Saldo</h3>
-            <p id="total-saldo">Rp0</p>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading">
+        <div class="loader"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Auth Container -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <h1>MyFinance</h1>
+            <p>Kelola keuangan dan utang dengan mudah</p>
+            
+            <div id="loginForm" class="auth-form">
+                <h2>Login</h2>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button onclick="login()">Login</button>
+                <p>Belum punya akun? <a href="#" onclick="showRegister()">Daftar</a></p>
+            </div>
+
+            <div id="registerForm" class="auth-form hidden">
+                <h2>Daftar</h2>
+                <input type="text" id="registerName" placeholder="Nama" required>
+                <input type="email" id="registerEmail" placeholder="Email" required>
+                <input type="password" id="registerPassword" placeholder="Password" required>
+                <button onclick="register()">Daftar</button>
+                <p>Sudah punya akun? <a href="#" onclick="showLogin()">Login</a></p>
+            </div>
         </div>
-        <div class="card utang">
-            <h3>Total Utang</h3>
-            <p id="total-utang">Rp0</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>MyFinance</h1>
+                <div class="header-actions">
+                    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <button class="nav-btn active" onclick="showPage('dashboard')">Dashboard</button>
+            <button class="nav-btn" onclick="showPage('transactions')">Transaksi</button>
+            <button class="nav-btn" onclick="showPage('debts')">Utang</button>
+            <button class="nav-btn" onclick="showPage('history')">History</button>
+        </nav>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="dashboard-grid">
+                <div class="card balance-card">
+                    <h3>Saldo Saat Ini</h3>
+                    <div class="balance" id="currentBalance">Rp 0</div>
+                </div>
+                
+                <div class="card income-card">
+                    <h3>Pemasukan Bulan Ini</h3>
+                    <div class="amount income" id="monthlyIncome">Rp 0</div>
+                </div>
+                
+                <div class="card expense-card">
+                    <h3>Pengeluaran Bulan Ini</h3>
+                    <div class="amount expense" id="monthlyExpense">Rp 0</div>
+                </div>
+                
+                <div class="card debt-card">
+                    <h3>Total Utang</h3>
+                    <div class="amount debt" id="totalDebt">Rp 0</div>
+                </div>
+            </div>
+
+            <div class="recent-section">
+                <div class="card">
+                    <h3>Transaksi Terbaru</h3>
+                    <div id="recentTransactions" class="recent-list"></div>
+                </div>
+                
+                <div class="card">
+                    <h3>Utang Mendesak</h3>
+                    <div id="urgentDebts" class="recent-list"></div>
+                </div>
+            </div>
         </div>
-    </section>
 
-    <!-- Form tambah transaksi -->
-    <section id="form-section">
-        <h2>Tambah Transaksi</h2>
-        <form id="transaction-form">
-            <select id="type" required>
-                <option value="" disabled selected>Jenis</option>
-                <option value="pemasukan">Pemasukan</option>
-                <option value="pengeluaran">Pengeluaran</option>
-                <option value="utang">Utang</option>
-            </select>
-            <input type="text" id="description" placeholder="Deskripsi" required>
-            <input type="number" id="amount" placeholder="Jumlah (Rp)" required>
-            <input type="date" id="due-date" placeholder="Tanggal jatuh tempo (opsional)">
-            <button type="submit">Tambah</button>
-        </form>
-    </section>
+        <!-- Transactions Page -->
+        <div id="transactionsPage" class="page hidden">
+            <div class="page-header">
+                <h2>Kelola Transaksi</h2>
+                <button class="add-btn" onclick="showAddTransaction()">+ Tambah</button>
+            </div>
 
-    <!-- Filter transaksi -->
-    <section id="filter-section">
-        <h2>Filter Transaksi</h2>
-        <select id="filter-type">
-            <option value="all">Semua</option>
-            <option value="pemasukan">Pemasukan</option>
-            <option value="pengeluaran">Pengeluaran</option>
-            <option value="utang">Utang</option>
-        </select>
-    </section>
+            <div id="addTransactionForm" class="card form-card hidden">
+                <h3>Tambah Transaksi</h3>
+                <div class="form-group">
+                    <select id="transactionType">
+                        <option value="income">Pemasukan</option>
+                        <option value="expense">Pengeluaran</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="transactionAmount" placeholder="Jumlah" required>
+                </div>
+                <div class="form-group">
+                    <select id="transactionCategory">
+                        <option value="makanan">Makanan</option>
+                        <option value="transport">Transport</option>
+                        <option value="belanja">Belanja</option>
+                        <option value="tagihan">Tagihan</option>
+                        <option value="entertainment">Hiburan</option>
+                        <option value="kesehatan">Kesehatan</option>
+                        <option value="gaji">Gaji</option>
+                        <option value="bonus">Bonus</option>
+                        <option value="lainnya">Lainnya</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="transactionNote" placeholder="Catatan (opsional)">
+                </div>
+                <div class="form-actions">
+                    <button onclick="addTransaction()">Simpan</button>
+                    <button onclick="hideAddTransaction()" class="cancel-btn">Batal</button>
+                </div>
+            </div>
 
-    <!-- Daftar transaksi -->
-    <section id="list-section">
-        <h2>Daftar Transaksi</h2>
-        <ul id="transaction-list"></ul>
-    </section>
+            <div class="card">
+                <div id="transactionsList" class="transactions-list"></div>
+            </div>
+        </div>
 
-    <!-- Firebase CDN -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+        <!-- Debts Page -->
+        <div id="debtsPage" class="page hidden">
+            <div class="page-header">
+                <h2>Kelola Utang</h2>
+                <button class="add-btn" onclick="showAddDebt()">+ Tambah</button>
+            </div>
 
+            <div id="addDebtForm" class="card form-card hidden">
+                <h3>Tambah Utang</h3>
+                <div class="form-group">
+                    <input type="text" id="debtName" placeholder="Nama/Keterangan" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="debtAmount" placeholder="Jumlah" required>
+                </div>
+                <div class="form-group">
+                    <input type="date" id="debtDeadline" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="debtNote" placeholder="Catatan (opsional)"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button onclick="addDebt()">Simpan</button>
+                    <button onclick="hideAddDebt()" class="cancel-btn">Batal</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="debtsList" class="debts-list"></div>
+            </div>
+        </div>
+
+        <!-- History Page -->
+        <div id="historyPage" class="page hidden">
+            <div class="page-header">
+                <h2>History</h2>
+                <div class="filter-controls">
+                    <select id="historyFilter">
+                        <option value="all">Semua</option>
+                        <option value="income">Pemasukan</option>
+                        <option value="expense">Pengeluaran</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="historyList" class="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="app.js"></script>
 </body>
