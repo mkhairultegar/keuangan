@@ -862,9 +862,12 @@
                 document.getElementById('filterDebtDate').value = '';
                 filteredDebts = [...debts];
                 renderDebts();
+            }
+        }
 
 
         // Hubungkan form dengan fungsi
-        document.getElementById('transactionForm').addEventListener('submit', addTransaction);
-        document.getElementById('debtForm').addEventListener('submit', addDebt);
-
+      document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('transactionForm').addEventListener('submit', addTransaction);
+    document.getElementById('debtForm').addEventListener('submit', addDebt);
+});
