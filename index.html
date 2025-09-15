@@ -29,10 +29,13 @@
             <div class="auth-form">
                 <h2>Masuk Aplikasi</h2>
                 <p>Data akan disinkronisasi ke cloud secara realtime</p>
-                <button onclick="loginAnonymously()">Mulai Sekarang</button>
+                <button id="loginBtn" onclick="loginAnonymously()">Mulai Sekarang</button>
                 <div class="user-info mt-20">
                     <p><small>🌐 Data tersimpan di cloud, akses dari device manapun!</small></p>
                     <p><small>🔒 Anonymous & aman</small></p>
+                    <div id="firebaseStatus" class="firebase-status">
+                        <small>🔄 Loading Firebase...</small>
+                    </div>
                 </div>
             </div>
         </div>
