@@ -1,206 +1,42 @@
-function displayDebts(debts) {
-    const container = document.getElementById('debtsList');
-    container.innerHTML = '';
-    
-    if (debts.length === 0) {
-        container.innerHTML = '<p class="text-center">Belum ada utang</p>';
-        return;
-    }
-    
-    debts.forEach(debt => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        const deadline = new Date(debt.deadline);
-        const isOverdue = deadline < new Date() && debt.status === 'pending';
-        const daysLeft = Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24));
-        
-        item.innerHTML = `
-            <div class="item-info">
-                <h4>${debt.name}</h4>
-                <p>${debt.note || 'No notes'}</p>
-                <p>Deadline: ${formatDate(debt.deadline)}</p>
-                <span class="status-badge ${debt.status === 'paid' ? 'status-paid' : (isOverdue ? 'status-overdue' : 'status-pending')}">
-                    ${debt.status === 'paid' ? 'Lunas' : (isOverdue ? 'Terlambat' : `${daysLeft} hari lagi`)}
-                </span>
-            </div>
-            <div>
-                <div class="item-amount debt">
-                    ${formatCurrency(debt.amount)}
-                </div>
-                <div class="item-actions mt-20">
-                    ${debt.status === 'pending' ? `
-                        <button class="btn-small btn-success" onclick="markDebtPaid('${debt.id}')">
-                            Lunas
-                        </button>
-                    ` : ''}
-                    <button class="btn-small btn-danger" onclick="deleteDebt('${debt.id}')">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function markDebtPaid(id) {
-    try {
-        const debtIndex = userData.debts.findIndex(d => d.id === id);
-        if (debtIndex !== -1) {
-            userData.debts[debtIndex].status = 'paid';
-            userData.debts[debtIndex].paidAt = new Date().toISOString();
-            saveUserData();
-            
-            loadDebts();
-            loadDashboard();
-            alert('Debt marked as paid!');
-        }
-    } catch (error) {
-        alert('Error updating debt: ' + error.message);
-    }
-}
-
-function deleteDebt(id) {
-    if (!confirm('Are you sure you want to delete this debt?')) return;
-    
-    try {
-        userData.debts = userData.debts.filter(d => d.id !== id);
-        saveUserData();
-        
-        loadDebts();
-        loadDashboard();
-        alert('Debt deleted successfully!');
-    } catch (error) {
-        alert('Error deleting debt: ' + error.message);
-    }
-}
-
-// History Functions
-function loadHistory() {
-    if (!currentUser) return;
-    
-    const filter = document.getElementById('historyFilter').value;
-    
-    try {
-        let transactions = userData.transactions;
-        
-        if (filter !== 'all') {
-            transactions = transactions.filter(t => t.type === filter);
-        }
-        
-        transactions = transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        displayHistory(transactions);
-    } catch (error) {
-        console.error('Error loading history:', error);
-    }
-}
-
-function displayHistory(transactions) {
-    const container = document.getElementById('historyList');
-    container.innerHTML = '';
-    
-    if (transactions.length === 0) {
-        container.innerHTML = '<p class="text-center">Tidak ada data</p>';
-        return;
-    }
-    
-    transactions.forEach(transaction => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.innerHTML = `
-            <div class="item-info">
-                <h4>${transaction.category}</h4>
-                <p>${transaction.note || 'No notes'}</p>
-                <p>${formatDate(transaction.createdAt)}</p>
-            </div>
-            <div class="item-amount ${transaction.type}">
-                ${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-// Utility Functions
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
-    }).format(amount);
-}
-
-function formatDate(dateInput) {
-    if (!dateInput) return 'Unknown date';
-    
-    const date = new Date(dateInput);
-    return date.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
-
-function resetData() {
-    if (confirm('⚠️ PERINGATAN! Ini akan menghapus SEMUA data keuangan Anda. Yakin ingin reset?')) {
-        if (confirm('Konfirmasi sekali lagi: Semua transaksi dan utang akan hilang permanen!')) {
-            // Clear all data
-            localStorage.removeItem('myfinance_user');
-            localStorage.removeItem('myfinance_data');
-            
-            // Reset variables
-            currentUser = null;
-            userData = { transactions: [], debts: [] };
-            
-            // Show auth screen
-            showAuth();
-            
-            alert('✅ Data berhasil direset! Silakan mulai dari awal.');
-        }
-    }
-}
-document.addEventListener('DOMContentLoaded', function() {
-    initTheme();
-    initializeApp();
-    
-    // History filter
-    document.getElementById('historyFilter').addEventListener('change', loadHistory);
-});
-
-// Initialize app when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        initTheme();
-        initializeApp();
-    });
-} else {
-    initTheme();
-    initializeApp();
-}// Global Variables
+// Global Variables
 let currentUser = null;
-let userData = {
-    transactions: [],
-    debts: []
-};
+let auth = null;
+let db = null;
 
-// Initialize App
-function initializeApp() {
-    hideLoading();
-    
-    // Check if user has used app before
-    const hasUsedApp = localStorage.getItem('myfinance_user');
-    
-    if (hasUsedApp) {
-        // Load data from localStorage for returning users
-        loadUserData();
+// Initialize Firebase
+function initializeFirebase() {
+    try {
+        auth = firebase.auth();
+        db = firebase.firestore();
         
-        // Auto login for returning users
-        currentUser = { uid: hasUsedApp };
-        showMainApp();
-        loadDashboard();
-    } else {
-        showAuth();
+        // Enable offline persistence
+        db.enablePersistence()
+            .catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+                } else if (err.code === 'unimplemented') {
+                    console.log('The current browser does not support all features required to enable persistence');
+                }
+            });
+        
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            hideLoading();
+            if (user) {
+                currentUser = user;
+                showMainApp();
+                loadDashboard();
+                console.log('User authenticated:', user.uid);
+            } else {
+                currentUser = null;
+                showAuth();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Firebase initialization error:', error);
+        hideLoading();
+        alert('Error initializing app. Please refresh the page.');
     }
 }
 
@@ -228,57 +64,66 @@ async function loginAnonymously() {
     try {
         showLoading();
         
-        // Check if user already exists
-        let userId = localStorage.getItem('myfinance_user');
-        
-        if (!userId) {
-            // Generate unique user ID for new users
-            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('myfinance_user', userId);
-        }
-        
-        // Load existing data if any
-        loadUserData();
-        
-        currentUser = { uid: userId };
-        
-        hideLoading();
-        showMainApp();
-        loadDashboard();
+        // Sign in anonymously
+        await auth.signInAnonymously();
+        console.log('Anonymous login successful');
         
     } catch (error) {
         hideLoading();
-        alert('Error starting app: ' + error.message);
+        console.error('Anonymous login failed:', error);
+        alert('Login failed: ' + error.message);
     }
 }
 
-function logout() {
+async function logout() {
     if (confirm('Yakin mau logout? Anda bisa login lagi nanti dengan data yang sama.')) {
-        // Jangan hapus data, cuma reset user session
-        currentUser = null;
-        showAuth();
+        try {
+            await auth.signOut();
+        } catch (error) {
+            alert('Logout failed: ' + error.message);
+        }
     }
 }
 
-// Data Management
-function saveUserData() {
-    if (currentUser) {
-        const dataToSave = {
-            ...userData,
-            lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('myfinance_data', JSON.stringify(dataToSave));
-    }
-}
-
-function loadUserData() {
-    const savedData = localStorage.getItem('myfinance_data');
-    if (savedData) {
-        userData = JSON.parse(savedData);
-        
-        // Ensure data structure
-        if (!userData.transactions) userData.transactions = [];
-        if (!userData.debts) userData.debts = [];
+function resetData() {
+    if (confirm('⚠️ PERINGATAN! Ini akan menghapus SEMUA data keuangan Anda. Yakin ingin reset?')) {
+        if (confirm('Konfirmasi sekali lagi: Semua transaksi dan utang akan hilang permanen!')) {
+            Promise.all([
+                // Delete all transactions
+                db.collection('transactions')
+                    .where('userId', '==', currentUser.uid)
+                    .get()
+                    .then(snapshot => {
+                        const batch = db.batch();
+                        snapshot.docs.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    }),
+                    
+                // Delete all debts
+                db.collection('debts')
+                    .where('userId', '==', currentUser.uid)
+                    .get()
+                    .then(snapshot => {
+                        const batch = db.batch();
+                        snapshot.docs.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    })
+            ])
+            .then(() => {
+                loadDashboard();
+                loadTransactions();
+                loadDebts();
+                alert('✅ Data berhasil direset! Mulai dari awal.');
+            })
+            .catch(error => {
+                console.error('Error resetting data:', error);
+                alert('Error resetting data: ' + error.message);
+            });
+        }
     }
 }
 
@@ -347,16 +192,19 @@ async function loadDashboard() {
     if (!currentUser) return;
     
     try {
-        const balance = calculateBalance();
-        const monthlyStats = getMonthlyStats();
-        const recentTransactions = getRecentTransactions();
-        const urgentDebts = getUrgentDebts();
+        const [balance, monthlyStats, recentTransactions, urgentDebts, totalDebt] = await Promise.all([
+            calculateBalance(),
+            getMonthlyStats(),
+            getRecentTransactions(),
+            getUrgentDebts(),
+            getTotalDebt()
+        ]);
         
         // Update balance cards
         document.getElementById('currentBalance').textContent = formatCurrency(balance);
         document.getElementById('monthlyIncome').textContent = formatCurrency(monthlyStats.income);
         document.getElementById('monthlyExpense').textContent = formatCurrency(monthlyStats.expense);
-        document.getElementById('totalDebt').textContent = formatCurrency(getTotalDebt());
+        document.getElementById('totalDebt').textContent = formatCurrency(totalDebt);
         
         // Update recent lists
         displayRecentTransactions(recentTransactions);
@@ -367,59 +215,83 @@ async function loadDashboard() {
     }
 }
 
-function calculateBalance() {
+async function calculateBalance() {
+    const snapshot = await db.collection('transactions')
+        .where('userId', '==', currentUser.uid)
+        .get();
+    
     let balance = 0;
-    userData.transactions.forEach(transaction => {
-        if (transaction.type === 'income') {
-            balance += transaction.amount;
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.type === 'income') {
+            balance += data.amount;
         } else {
-            balance -= transaction.amount;
+            balance -= data.amount;
         }
     });
+    
     return balance;
 }
 
-function getMonthlyStats() {
+async function getMonthlyStats() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    let income = 0, expense = 0;
+    const snapshot = await db.collection('transactions')
+        .where('userId', '==', currentUser.uid)
+        .where('createdAt', '>=', startOfMonth)
+        .get();
     
-    userData.transactions.forEach(transaction => {
-        const transactionDate = new Date(transaction.createdAt);
-        if (transactionDate >= startOfMonth) {
-            if (transaction.type === 'income') {
-                income += transaction.amount;
-            } else {
-                expense += transaction.amount;
-            }
+    let income = 0, expense = 0;
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.type === 'income') {
+            income += data.amount;
+        } else {
+            expense += data.amount;
         }
     });
     
     return { income, expense };
 }
 
-function getRecentTransactions() {
-    return userData.transactions
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 5);
+async function getRecentTransactions() {
+    const snapshot = await db.collection('transactions')
+        .where('userId', '==', currentUser.uid)
+        .orderBy('createdAt', 'desc')
+        .limit(5)
+        .get();
+    
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function getUrgentDebts() {
+async function getUrgentDebts() {
     const now = new Date();
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     
-    return userData.debts
-        .filter(debt => debt.status === 'pending')
-        .filter(debt => new Date(debt.deadline) <= nextWeek)
-        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-        .slice(0, 5);
+    const snapshot = await db.collection('debts')
+        .where('userId', '==', currentUser.uid)
+        .where('status', '==', 'pending')
+        .where('deadline', '<=', nextWeek)
+        .orderBy('deadline', 'asc')
+        .limit(5)
+        .get();
+    
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-function getTotalDebt() {
-    return userData.debts
-        .filter(debt => debt.status === 'pending')
-        .reduce((total, debt) => total + debt.amount, 0);
+async function getTotalDebt() {
+    const snapshot = await db.collection('debts')
+        .where('userId', '==', currentUser.uid)
+        .where('status', '==', 'pending')
+        .get();
+    
+    let total = 0;
+    snapshot.forEach(doc => {
+        total += doc.data().amount;
+    });
+    
+    return total;
 }
 
 function displayRecentTransactions(transactions) {
@@ -459,7 +331,7 @@ function displayUrgentDebts(debts) {
     debts.forEach(debt => {
         const item = document.createElement('div');
         item.className = 'recent-item';
-        const daysLeft = Math.ceil((new Date(debt.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.ceil((debt.deadline.toDate() - new Date()) / (1000 * 60 * 60 * 24));
         item.innerHTML = `
             <div>
                 <strong>${debt.name}</strong>
@@ -490,7 +362,7 @@ function clearTransactionForm() {
     document.getElementById('transactionNote').value = '';
 }
 
-function addTransaction() {
+async function addTransaction() {
     const type = document.getElementById('transactionType').value;
     const amount = parseFloat(document.getElementById('transactionAmount').value);
     const category = document.getElementById('transactionCategory').value;
@@ -502,34 +374,35 @@ function addTransaction() {
     }
     
     try {
-        const newTransaction = {
-            id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        await db.collection('transactions').add({
             userId: currentUser.uid,
             type: type,
             amount: amount,
             category: category,
             note: note,
-            createdAt: new Date().toISOString()
-        };
-        
-        userData.transactions.push(newTransaction);
-        saveUserData();
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
         
         hideAddTransaction();
         loadTransactions();
         loadDashboard();
         alert('Transaction added successfully!');
     } catch (error) {
+        console.error('Error adding transaction:', error);
         alert('Error adding transaction: ' + error.message);
     }
 }
 
-function loadTransactions() {
+async function loadTransactions() {
     if (!currentUser) return;
     
     try {
-        const transactions = userData.transactions
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const snapshot = await db.collection('transactions')
+            .where('userId', '==', currentUser.uid)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         displayTransactions(transactions);
     } catch (error) {
         console.error('Error loading transactions:', error);
@@ -569,17 +442,16 @@ function displayTransactions(transactions) {
     });
 }
 
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
     if (!confirm('Are you sure you want to delete this transaction?')) return;
     
     try {
-        userData.transactions = userData.transactions.filter(t => t.id !== id);
-        saveUserData();
-        
+        await db.collection('transactions').doc(id).delete();
         loadTransactions();
         loadDashboard();
         alert('Transaction deleted successfully!');
     } catch (error) {
+        console.error('Error deleting transaction:', error);
         alert('Error deleting transaction: ' + error.message);
     }
 }
@@ -601,10 +473,10 @@ function clearDebtForm() {
     document.getElementById('debtNote').value = '';
 }
 
-function addDebt() {
+async function addDebt() {
     const name = document.getElementById('debtName').value;
     const amount = parseFloat(document.getElementById('debtAmount').value);
-    const deadline = document.getElementById('debtDeadline').value;
+    const deadline = new Date(document.getElementById('debtDeadline').value);
     const note = document.getElementById('debtNote').value;
     
     if (!name || !amount || amount <= 0 || !deadline) {
@@ -613,35 +485,36 @@ function addDebt() {
     }
     
     try {
-        const newDebt = {
-            id: 'debt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        await db.collection('debts').add({
             userId: currentUser.uid,
             name: name,
             amount: amount,
             deadline: deadline,
             note: note,
             status: 'pending',
-            createdAt: new Date().toISOString()
-        };
-        
-        userData.debts.push(newDebt);
-        saveUserData();
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
         
         hideAddDebt();
         loadDebts();
         loadDashboard();
         alert('Debt added successfully!');
     } catch (error) {
+        console.error('Error adding debt:', error);
         alert('Error adding debt: ' + error.message);
     }
 }
 
-function loadDebts() {
+async function loadDebts() {
     if (!currentUser) return;
     
     try {
-        const debts = userData.debts
-            .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        const snapshot = await db.collection('debts')
+            .where('userId', '==', currentUser.uid)
+            .orderBy('deadline', 'asc')
+            .get();
+        
+        const debts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         displayDebts(debts);
     } catch (error) {
         console.error('Error loading debts:', error);
@@ -704,6 +577,7 @@ async function markDebtPaid(id) {
         loadDashboard();
         alert('Debt marked as paid!');
     } catch (error) {
+        console.error('Error updating debt:', error);
         alert('Error updating debt: ' + error.message);
     }
 }
@@ -717,6 +591,7 @@ async function deleteDebt(id) {
         loadDashboard();
         alert('Debt deleted successfully!');
     } catch (error) {
+        console.error('Error deleting debt:', error);
         alert('Error deleting debt: ' + error.message);
     }
 }
@@ -729,14 +604,13 @@ async function loadHistory() {
     
     try {
         let query = db.collection('transactions')
-            .where('userId', '==', currentUser.uid)
-            .orderBy('createdAt', 'desc');
+            .where('userId', '==', currentUser.uid);
         
         if (filter !== 'all') {
             query = query.where('type', '==', filter);
         }
         
-        const snapshot = await query.get();
+        const snapshot = await query.orderBy('createdAt', 'desc').get();
         const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         displayHistory(transactions);
