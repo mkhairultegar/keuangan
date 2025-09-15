@@ -142,7 +142,24 @@ function formatDate(dateInput) {
     });
 }
 
-// Event Listeners
+function resetData() {
+    if (confirm('⚠️ PERINGATAN! Ini akan menghapus SEMUA data keuangan Anda. Yakin ingin reset?')) {
+        if (confirm('Konfirmasi sekali lagi: Semua transaksi dan utang akan hilang permanen!')) {
+            // Clear all data
+            localStorage.removeItem('myfinance_user');
+            localStorage.removeItem('myfinance_data');
+            
+            // Reset variables
+            currentUser = null;
+            userData = { transactions: [], debts: [] };
+            
+            // Show auth screen
+            showAuth();
+            
+            alert('✅ Data berhasil direset! Silakan mulai dari awal.');
+        }
+    }
+}
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     initializeApp();
@@ -169,15 +186,15 @@ let userData = {
 
 // Initialize App
 function initializeApp() {
-    // Load data from localStorage
-    loadUserData();
+    hideLoading();
     
     // Check if user has used app before
     const hasUsedApp = localStorage.getItem('myfinance_user');
     
-    hideLoading();
-    
     if (hasUsedApp) {
+        // Load data from localStorage for returning users
+        loadUserData();
+        
         // Auto login for returning users
         currentUser = { uid: hasUsedApp };
         showMainApp();
@@ -211,11 +228,17 @@ async function loginAnonymously() {
     try {
         showLoading();
         
-        // Generate unique user ID
-        const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        // Check if user already exists
+        let userId = localStorage.getItem('myfinance_user');
         
-        // Save user ID
-        localStorage.setItem('myfinance_user', userId);
+        if (!userId) {
+            // Generate unique user ID for new users
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('myfinance_user', userId);
+        }
+        
+        // Load existing data if any
+        loadUserData();
         
         currentUser = { uid: userId };
         
@@ -230,14 +253,9 @@ async function loginAnonymously() {
 }
 
 function logout() {
-    if (confirm('Yakin mau logout? Data akan hilang jika tidak dibookmark!')) {
-        localStorage.removeItem('myfinance_user');
-        localStorage.removeItem('myfinance_data');
-        localStorage.removeItem('theme');
-        
+    if (confirm('Yakin mau logout? Anda bisa login lagi nanti dengan data yang sama.')) {
+        // Jangan hapus data, cuma reset user session
         currentUser = null;
-        userData = { transactions: [], debts: [] };
-        
         showAuth();
     }
 }
