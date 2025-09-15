@@ -2,12 +2,26 @@
 let currentUser = null;
 let auth = null;
 let db = null;
+let firebaseReady = false;
 
 // Initialize Firebase
 function initializeFirebase() {
     try {
+        // Wait for Firebase to be loaded
+        if (typeof firebase === 'undefined') {
+            console.log('Firebase not loaded yet, retrying...');
+            setTimeout(initializeFirebase, 100);
+            return;
+        }
+
         auth = firebase.auth();
         db = firebase.firestore();
+        firebaseReady = true;
+        
+        console.log('Firebase initialized successfully');
+        
+        // Update status
+        updateFirebaseStatus('ready', '✅ Firebase ready!');
         
         // Enable offline persistence
         db.enablePersistence()
@@ -35,8 +49,17 @@ function initializeFirebase() {
         
     } catch (error) {
         console.error('Firebase initialization error:', error);
+        updateFirebaseStatus('error', '❌ Firebase error!');
         hideLoading();
         alert('Error initializing app. Please refresh the page.');
+    }
+}
+
+function updateFirebaseStatus(status, message) {
+    const statusEl = document.getElementById('firebaseStatus');
+    if (statusEl) {
+        statusEl.className = `firebase-status ${status}`;
+        statusEl.innerHTML = `<small>${message}</small>`;
     }
 }
 
@@ -61,17 +84,39 @@ function showMainApp() {
 }
 
 async function loginAnonymously() {
+    const loginBtn = document.getElementById('loginBtn');
+    
     try {
+        // Disable button and show loading
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Loading...';
         showLoading();
         
+        // Check if Firebase is ready
+        if (!firebaseReady || !auth) {
+            throw new Error('Firebase is still loading. Please wait a moment and try again.');
+        }
+        
         // Sign in anonymously
-        await auth.signInAnonymously();
-        console.log('Anonymous login successful');
+        const result = await auth.signInAnonymously();
+        console.log('Anonymous login successful:', result.user.uid);
         
     } catch (error) {
         hideLoading();
         console.error('Anonymous login failed:', error);
-        alert('Login failed: ' + error.message);
+        
+        // Re-enable button
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Mulai Sekarang';
+        
+        // More specific error messages
+        if (error.code === 'auth/operation-not-allowed') {
+            alert('Anonymous authentication is not enabled. Please enable it in Firebase Console → Authentication → Sign-in method → Anonymous.');
+        } else if (error.message.includes('Firebase is still loading')) {
+            alert(error.message);
+        } else {
+            alert('Login failed: ' + error.message + '\n\nPlease check:\n1. Firebase config is correct\n2. Anonymous auth is enabled\n3. Internet connection');
+        }
     }
 }
 
