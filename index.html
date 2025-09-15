@@ -586,6 +586,7 @@
             }
         }
 
+
         // Fallback to localStorage if Firebase fails
         function loadLocalData() {
             transactions = JSON.parse(localStorage.getItem('transactions')) || [];
@@ -861,3 +862,9 @@
                 document.getElementById('filterDebtDate').value = '';
                 filteredDebts = [...debts];
                 renderDebts();
+
+
+        // Hubungkan form dengan fungsi
+        document.getElementById('transactionForm').addEventListener('submit', addTransaction);
+        document.getElementById('debtForm').addEventListener('submit', addDebt);
+
