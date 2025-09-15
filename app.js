@@ -20,9 +20,6 @@ function initializeFirebase() {
         
         console.log('Firebase initialized successfully');
         
-        // Update status
-        updateFirebaseStatus('ready', '✅ Firebase ready!');
-        
         // Enable offline persistence
         db.enablePersistence()
             .catch((err) => {
@@ -49,17 +46,8 @@ function initializeFirebase() {
         
     } catch (error) {
         console.error('Firebase initialization error:', error);
-        updateFirebaseStatus('error', '❌ Firebase error!');
         hideLoading();
         alert('Error initializing app. Please refresh the page.');
-    }
-}
-
-function updateFirebaseStatus(status, message) {
-    const statusEl = document.getElementById('firebaseStatus');
-    if (statusEl) {
-        statusEl.className = `firebase-status ${status}`;
-        statusEl.innerHTML = `<small>${message}</small>`;
     }
 }
 
@@ -84,17 +72,14 @@ function showMainApp() {
 }
 
 async function loginAnonymously() {
-    const loginBtn = document.getElementById('loginBtn');
-    
     try {
-        // Disable button and show loading
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Loading...';
         showLoading();
         
         // Check if Firebase is ready
         if (!firebaseReady || !auth) {
-            throw new Error('Firebase is still loading. Please wait a moment and try again.');
+            hideLoading();
+            alert('Firebase is still loading. Please wait a moment and try again.');
+            return;
         }
         
         // Sign in anonymously
@@ -105,17 +90,11 @@ async function loginAnonymously() {
         hideLoading();
         console.error('Anonymous login failed:', error);
         
-        // Re-enable button
-        loginBtn.disabled = false;
-        loginBtn.textContent = 'Mulai Sekarang';
-        
         // More specific error messages
         if (error.code === 'auth/operation-not-allowed') {
-            alert('Anonymous authentication is not enabled. Please enable it in Firebase Console → Authentication → Sign-in method → Anonymous.');
-        } else if (error.message.includes('Firebase is still loading')) {
-            alert(error.message);
+            alert('Anonymous authentication is not enabled. Please enable it in Firebase Console.');
         } else {
-            alert('Login failed: ' + error.message + '\n\nPlease check:\n1. Firebase config is correct\n2. Anonymous auth is enabled\n3. Internet connection');
+            alert('Login failed: ' + error.message);
         }
     }
 }
