@@ -26,21 +26,13 @@
             <h1>MyFinance</h1>
             <p>Kelola keuangan dan utang dengan mudah</p>
             
-            <div id="loginForm" class="auth-form">
-                <h2>Login</h2>
-                <input type="email" id="loginEmail" placeholder="Email" required>
-                <input type="password" id="loginPassword" placeholder="Password" required>
-                <button onclick="login()">Login</button>
-                <p>Belum punya akun? <a href="#" onclick="showRegister()">Daftar</a></p>
-            </div>
-
-            <div id="registerForm" class="auth-form hidden">
-                <h2>Daftar</h2>
-                <input type="text" id="registerName" placeholder="Nama" required>
-                <input type="email" id="registerEmail" placeholder="Email" required>
-                <input type="password" id="registerPassword" placeholder="Password" required>
-                <button onclick="register()">Daftar</button>
-                <p>Sudah punya akun? <a href="#" onclick="showLogin()">Login</a></p>
+            <div class="auth-form">
+                <h2>Masuk Aplikasi</h2>
+                <p>Data akan disimpan secara lokal di browser Anda</p>
+                <button onclick="loginAnonymously()">Mulai Sekarang</button>
+                <div class="user-info mt-20">
+                    <p><small>💡 Tip: Bookmark halaman ini agar data tidak hilang</small></p>
+                </div>
             </div>
         </div>
     </div>
