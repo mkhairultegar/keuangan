@@ -39,4 +39,15 @@ li {
     margin-bottom: 10px;
     padding: 10px;
     border-left: 5px solid #4CAF50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+li button {
+    background-color: #f44336;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
 }
