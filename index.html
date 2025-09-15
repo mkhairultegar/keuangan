@@ -3,16 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catatan Keuangan & Utang</title>
+    <title>Money Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Catatan Keuangan & Utang</h1>
+    <h1>Money Tracker</h1>
 
+    <!-- Dashboard -->
+    <section id="dashboard">
+        <div class="card saldo">
+            <h3>Total Saldo</h3>
+            <p id="total-saldo">Rp0</p>
+        </div>
+        <div class="card utang">
+            <h3>Total Utang</h3>
+            <p id="total-utang">Rp0</p>
+        </div>
+    </section>
+
+    <!-- Form tambah transaksi -->
     <section id="form-section">
         <h2>Tambah Transaksi</h2>
         <form id="transaction-form">
-            <input type="text" id="type" placeholder="Jenis: pemasukan/pengeluaran/utang" required>
+            <select id="type" required>
+                <option value="" disabled selected>Jenis</option>
+                <option value="pemasukan">Pemasukan</option>
+                <option value="pengeluaran">Pengeluaran</option>
+                <option value="utang">Utang</option>
+            </select>
             <input type="text" id="description" placeholder="Deskripsi" required>
             <input type="number" id="amount" placeholder="Jumlah (Rp)" required>
             <input type="date" id="due-date" placeholder="Tanggal jatuh tempo (opsional)">
@@ -20,12 +38,18 @@
         </form>
     </section>
 
-    <section id="summary-section">
-        <h2>Ringkasan</h2>
-        <p>Total Saldo: <span id="total-saldo">Rp0</span></p>
-        <p>Total Utang: <span id="total-utang">Rp0</span></p>
+    <!-- Filter transaksi -->
+    <section id="filter-section">
+        <h2>Filter Transaksi</h2>
+        <select id="filter-type">
+            <option value="all">Semua</option>
+            <option value="pemasukan">Pemasukan</option>
+            <option value="pengeluaran">Pengeluaran</option>
+            <option value="utang">Utang</option>
+        </select>
     </section>
 
+    <!-- Daftar transaksi -->
     <section id="list-section">
         <h2>Daftar Transaksi</h2>
         <ul id="transaction-list"></ul>
