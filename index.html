@@ -25,33 +25,19 @@
         <div class="auth-card">
             <h1>MyFinance</h1>
             <p>Kelola keuangan dan utang dengan mudah</p>
-            
-            <div class="auth-form">
-                <h2>Masuk Aplikasi</h2>
-                <p>Data akan disinkronisasi ke cloud secara realtime</p>
-                <button id="loginBtn" onclick="loginAnonymously()">Mulai Sekarang</button>
-                <div class="user-info mt-20">
-                    <p><small>🌐 Data tersimpan di cloud, akses dari device manapun!</small></p>
-                    <p><small>🔒 Anonymous & aman</small></p>
-                    <div id="firebaseStatus" class="firebase-status">
-                        <small>🔄 Loading Firebase...</small>
-                    </div>
-                </div>
-            </div>
+            <button id="loginBtn" onclick="loginAnonymously()">Mulai Sekarang</button>
+            <div id="firebaseStatus" class="firebase-status">🔄 Loading Firebase...</div>
         </div>
     </div>
 
     <!-- Main App -->
     <div id="mainApp" class="main-app hidden">
-        <!-- Header -->
         <header class="header">
-            <div class="header-content">
-                <h1>MyFinance</h1>
-                <div class="header-actions">
-                    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()">🌙</button>
-                    <button class="reset-btn" onclick="resetData()">Reset</button>
-                    <button class="logout-btn" onclick="logout()">Logout</button>
-                </div>
+            <h1>MyFinance</h1>
+            <div class="header-actions">
+                <button id="themeToggle" onclick="toggleTheme()">🌙</button>
+                <button onclick="resetData()" class="reset-btn">Reset</button>
+                <button onclick="logout()" class="logout-btn">Logout</button>
             </div>
         </header>
 
@@ -63,24 +49,21 @@
             <button class="nav-btn" onclick="showPage('history')">History</button>
         </nav>
 
-        <!-- Dashboard Page -->
+        <!-- Pages -->
         <div id="dashboardPage" class="page">
             <div class="dashboard-grid">
                 <div class="card balance-card">
                     <h3>Saldo Saat Ini</h3>
                     <div class="balance" id="currentBalance">Rp 0</div>
                 </div>
-                
                 <div class="card income-card">
                     <h3>Pemasukan Bulan Ini</h3>
                     <div class="amount income" id="monthlyIncome">Rp 0</div>
                 </div>
-                
                 <div class="card expense-card">
                     <h3>Pengeluaran Bulan Ini</h3>
                     <div class="amount expense" id="monthlyExpense">Rp 0</div>
                 </div>
-                
                 <div class="card debt-card">
                     <h3>Total Utang</h3>
                     <div class="amount debt" id="totalDebt">Rp 0</div>
@@ -92,7 +75,6 @@
                     <h3>Transaksi Terbaru</h3>
                     <div id="recentTransactions" class="recent-list"></div>
                 </div>
-                
                 <div class="card">
                     <h3>Utang Mendesak</h3>
                     <div id="urgentDebts" class="recent-list"></div>
@@ -106,43 +88,31 @@
                 <h2>Kelola Transaksi</h2>
                 <button class="add-btn" onclick="showAddTransaction()">+ Tambah</button>
             </div>
-
             <div id="addTransactionForm" class="card form-card hidden">
                 <h3>Tambah Transaksi</h3>
-                <div class="form-group">
-                    <select id="transactionType">
-                        <option value="income">Pemasukan</option>
-                        <option value="expense">Pengeluaran</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <input type="number" id="transactionAmount" placeholder="Jumlah" required>
-                </div>
-                <div class="form-group">
-                    <select id="transactionCategory">
-                        <option value="makanan">Makanan</option>
-                        <option value="transport">Transport</option>
-                        <option value="belanja">Belanja</option>
-                        <option value="tagihan">Tagihan</option>
-                        <option value="entertainment">Hiburan</option>
-                        <option value="kesehatan">Kesehatan</option>
-                        <option value="gaji">Gaji</option>
-                        <option value="bonus">Bonus</option>
-                        <option value="lainnya">Lainnya</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <input type="text" id="transactionNote" placeholder="Catatan (opsional)">
-                </div>
+                <select id="transactionType">
+                    <option value="income">Pemasukan</option>
+                    <option value="expense">Pengeluaran</option>
+                </select>
+                <input type="number" id="transactionAmount" placeholder="Jumlah" required>
+                <select id="transactionCategory">
+                    <option value="makanan">Makanan</option>
+                    <option value="transport">Transport</option>
+                    <option value="belanja">Belanja</option>
+                    <option value="tagihan">Tagihan</option>
+                    <option value="entertainment">Hiburan</option>
+                    <option value="kesehatan">Kesehatan</option>
+                    <option value="gaji">Gaji</option>
+                    <option value="bonus">Bonus</option>
+                    <option value="lainnya">Lainnya</option>
+                </select>
+                <input type="text" id="transactionNote" placeholder="Catatan (opsional)">
                 <div class="form-actions">
                     <button onclick="addTransaction()">Simpan</button>
                     <button onclick="hideAddTransaction()" class="cancel-btn">Batal</button>
                 </div>
             </div>
-
-            <div class="card">
-                <div id="transactionsList" class="transactions-list"></div>
-            </div>
+            <div id="transactionsList" class="transactions-list card"></div>
         </div>
 
         <!-- Debts Page -->
@@ -151,52 +121,35 @@
                 <h2>Kelola Utang</h2>
                 <button class="add-btn" onclick="showAddDebt()">+ Tambah</button>
             </div>
-
             <div id="addDebtForm" class="card form-card hidden">
                 <h3>Tambah Utang</h3>
-                <div class="form-group">
-                    <input type="text" id="debtName" placeholder="Nama/Keterangan" required>
-                </div>
-                <div class="form-group">
-                    <input type="number" id="debtAmount" placeholder="Jumlah" required>
-                </div>
-                <div class="form-group">
-                    <input type="date" id="debtDeadline" required>
-                </div>
-                <div class="form-group">
-                    <textarea id="debtNote" placeholder="Catatan (opsional)"></textarea>
-                </div>
+                <input type="text" id="debtName" placeholder="Nama/Keterangan" required>
+                <input type="number" id="debtAmount" placeholder="Jumlah" required>
+                <input type="date" id="debtDeadline" required>
+                <textarea id="debtNote" placeholder="Catatan (opsional)"></textarea>
                 <div class="form-actions">
                     <button onclick="addDebt()">Simpan</button>
                     <button onclick="hideAddDebt()" class="cancel-btn">Batal</button>
                 </div>
             </div>
-
-            <div class="card">
-                <div id="debtsList" class="debts-list"></div>
-            </div>
+            <div id="debtsList" class="debts-list card"></div>
         </div>
 
         <!-- History Page -->
         <div id="historyPage" class="page hidden">
             <div class="page-header">
                 <h2>History</h2>
-                <div class="filter-controls">
-                    <select id="historyFilter">
-                        <option value="all">Semua</option>
-                        <option value="income">Pemasukan</option>
-                        <option value="expense">Pengeluaran</option>
-                    </select>
-                </div>
+                <select id="historyFilter">
+                    <option value="all">Semua</option>
+                    <option value="income">Pemasukan</option>
+                    <option value="expense">Pengeluaran</option>
+                </select>
             </div>
-
-            <div class="card">
-                <div id="historyList" class="history-list"></div>
-            </div>
+            <div id="historyList" class="history-list card"></div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Firebase & App JS -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
